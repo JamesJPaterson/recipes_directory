@@ -37,14 +37,17 @@ If seed data is provided (or you already created it), you can skip this step.
 -- so we can start with a fresh state.
 -- (RESTART IDENTITY resets the primary key)
 
-TRUNCATE TABLE students RESTART IDENTITY; -- replace with your own table name.
-
+TRUNCATE TABLE user_accounts RESTART IDENTITY; -- replace with your own table name.
+TRUNCATE TABLE posts RESTART IDENTITY
 
 -- Below this line there should only be `INSERT` statements.
 -- Replace these statements with your own seed data.
 
-INSERT INTO students (name, cohort_name) VALUES ('David', 'April 2022');
-INSERT INTO students (name, cohort_name) VALUES ('Anna', 'May 2022');
+INSERT INTO user_accounts (username, email_address) VALUES ('James', 'James@gmail.com');
+INSERT INTO user_accounts (username, email_address) VALUES ('Jack', 'Jack@gmail.com');
+
+INSERT INTO posts (title, content, user_accounts_id) VALUES ('My name', 'Is James', '1');
+INSERT INTO posts (title, content, user_accounts_id) VALUES ('My age', 'Is 23', '2');
 ```
 
 Run this SQL file on the database to truncate (empty) the table, and insert the seed data. Be mindful of the fact any existing records in the table will be deleted.
@@ -61,19 +64,19 @@ Usually, the Model class name will be the capitalised table name (single instead
 # EXAMPLE
 # Table name: students
 
-
-
-# Model class
-# (in lib/albums.rb)
-class Albums
+class UserAccounts
 end
 
-# Repository class
-# (in lib/album_repository.rb)
-
-class AlbumRepository
+class UserAccountsRepository
 end
 
+
+class Posts
+end
+
+
+class PostsRepository
+end
 
 
 ```
@@ -89,10 +92,16 @@ Define the attributes of your Model class. You can usually map the table columns
 # Model class
 # (in lib/albums.rb)
 
-class Album
+class UserAccounts
 
   # Replace the attributes by your own columns.
-  attr_accessor :id, :title, :release_year, :artist_id
+  attr_accessor :id, :username, :email_address
+end
+
+class Posts
+
+  # Replace the attributes by your own columns.
+  attr_accessor :id, :title, :content, :user_account_id
 end
 
 # The keyword attr_accessor is a special Ruby feature
@@ -128,13 +137,13 @@ Using comments, define the method signatures (arguments and return value) and wh
 # Repository class
 # (in lib/albums_repository.rb)
 
-class AlbumRepository
+class User_accountsRepository
 
   # Selecting all records
   # No arguments
   def all
     # Executes the SQL query:
-    SELECT id, title, release_year, artist_id FROM albums;
+    SELECT id, username, email_address FROM user_accounts;
 
     # Returns an array of Album objects.
   end
@@ -143,17 +152,52 @@ class AlbumRepository
   # One argument: the id (number)
   def find(id)
     # Executes the SQL query:
-    SELECT id, title, release_year, artist_id FROM albums WHERE id = 1;
+    SELECT id, username, email_address FROM user_accounts; WHERE id = 1;
 
     # Returns a single Student object.
   end
 
 
-  def create(album)
-    INSERT INTO albums (title, release_year, artist_id) VALUES ('#{album.title}', '#{album.release_year}', '#{album.artist_id}');
+  def create(user_account)
+    INSERT INTO user_accounts (username, email_address) VALUES ('#{user_account.username}', '#{user_account.email_address}');
   end
+
+  def delete(id)
+    DELETE FROM user_accounts WHERE id = '#{id}';
+end
+
+
+
+class PostsRepository
+
+  # Selecting all records
+  # No arguments
+  def all
+    # Executes the SQL query:
+    SELECT id, title, content, user_accounts_id FROM posts;
+
+    # Returns an array of Album objects.
+  end
+
+  # Gets a single record by its ID
+  # One argument: the id (number)
+  def find(id)
+    # Executes the SQL query:
+    SELECT id, title, content, user_accounts_id FROM posts; WHERE id = 1;
+
+    # Returns a single Student object.
+  end
+
+
+  def create(post)
+    INSERT INTO posts (title, content, user_accounts_id) VALUES ('#{post.title', '#{post.content}', '#{post.user_accounts_id}');
+  end
+
+  def delete(id)
+    DELETE FROM posts WHERE id = '#{id}';
 end
 ```
+
 
 ## 6. Write Test Examples
 
@@ -167,33 +211,36 @@ These examples will later be encoded as RSpec tests.
 # 1
 # Get all students
 
-repo = AlbumRepository.new
+repo = UserAccountsRepository.new
 
-albums = repo.all
+users = repo.all
 
-albums.length # =>  2
+users.length # =>  2
 
-albums[0].id # =>  1
-albums[0].title # =>  'American Teen'
-albums[0].release_year # =>  '2017'
-albums[0].artist_id # =>  '1'
-
-albums[1].id # =>  2
-albums[1].title # =>  'Free Spirit'
-albums[1].release_year # =>  '2019'
-albums[0].artist_id # =>  '1'
+users[0].id # =>  1
+users[0].username # =>  'James'
+users[0].email_address # =>  'James@gmail.com'
 
 # 2
 # Get a single student
 
-repo = AlbumsRepository.new
+repo = UserAccountsRepository.new
 
-album = repo.find(1)
+users = repo.find(2)
 
-album.id # =>  1
-album.title # =>  'American Teen'
-album.release_year # =>  '2017'
-album.artist_id # =>  '1'
+users.id # =>  2
+users.title # =>  'Jack'
+users.release_year # =>  'Jack@gmail.com'
+
+
+repo = PostsRepository.new
+
+posts = repo.find(1)
+
+posts.id # =>  1
+posts.title # =>  'My name is'
+posts.content # =>  'James'
+posts.artist_id # =>  '1'
 
 # Add more examples for each method
 ```
@@ -211,7 +258,7 @@ This is so you get a fresh table contents every time you run the test suite.
 
 # file: spec/albums_repository_spec.rb
 
-def reset_albums_table
+def reset_social_network_table
   seed_sql = File.read('spec/seeds_albums.sql')
   connection = PG.connect({ host: '127.0.0.1', dbname: 'music_library_test' })
   connection.exec(seed_sql)
